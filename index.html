@@ -14,30 +14,44 @@
     </style>
   </head>
   <body>
+    <div id="nicknameForm">
+      <input id="nickname" autocomplete="off" /><button>Submit Nickname</button>
+    </div>
+
     <ul id="messages"></ul>
-    <form action="">
+
+    <form action="" disabled>
       <input id="m" autocomplete="off" /><button>Send</button>
     </form>
     <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
     <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
     <script>
       var socket = io();
+      var nickname = null;
+
       $('form').submit(function () {
         socket.emit('chat message', $('#m').val());
         $('#m').val('');
         return false;
       });
 
-      socket.on('chat message', function (msg) {
-        $('#messages').append($('<li>').text(msg));
+      $('#nicknameForm button').click(function () {
+        nickname = $('#nickname').val();
+        socket.emit('user.nameSubmitted', nickname);
+        $('#nicknameForm').hide();
+        $('form').removeAttr('disabled');
+      })
+
+      socket.on('chat.message', function (username, msg) {
+        $('#messages').append($('<li>').text(username + ': ' + msg));
       });
 
-      socket.on('user.connected', function () {
-        $('#messages').append($('<li>').text("User joined the session."));
+      socket.on('user.connected', function (username) {
+        $('#messages').append($('<li>').text("User '" + username + "' joined the session."));
       });
 
-      socket.on('user.disconnected', function () {
-        $('#messages').append($('<li>').text("User has left."));
+      socket.on('user.disconnected', function (username) {
+        $('#messages').append($('<li>').text("User '" + username + "'' has left."));
       });
 
     </script>
