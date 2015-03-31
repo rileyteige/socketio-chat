@@ -11,10 +11,10 @@ io.on('connection', function (socket) {
 
 	var username = null;
 
-	socket.on('chat message', function (msg) {
-		if (!username) return;
+	socket.on('chat.message', function (msg) {
+		if (!username || !msg) return;
 
-		io.emit('chat.message', username, msg);
+		socket.broadcast.emit('chat.message', username, msg);
 		console.log(username + '|' + msg);
 	})
 

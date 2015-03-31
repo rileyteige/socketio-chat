@@ -29,8 +29,17 @@
       var socket = io();
       var nickname = null;
 
+      var pushMessage = function (username, msg) {
+        $('#messages').append($('<li>').text(username + ': ' + msg));
+      }
+
       $('form').submit(function () {
-        socket.emit('chat message', $('#m').val());
+        var msg = $('#m').val();
+
+        if (!msg) return;
+
+        socket.emit('chat.message', msg);
+        pushMessage(nickname, msg);
         $('#m').val('');
         return false;
       });
@@ -43,7 +52,7 @@
       })
 
       socket.on('chat.message', function (username, msg) {
-        $('#messages').append($('<li>').text(username + ': ' + msg));
+        pushMessage(username, msg);
       });
 
       socket.on('user.connected', function (username) {
@@ -51,7 +60,7 @@
       });
 
       socket.on('user.disconnected', function (username) {
-        $('#messages').append($('<li>').text("User '" + username + "'' has left."));
+        $('#messages').append($('<li>').text("User '" + username + "' has left."));
       });
 
     </script>
