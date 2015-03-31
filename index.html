@@ -26,43 +26,48 @@
     <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
     <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
     <script>
-      var socket = io();
-      var nickname = null;
+      (function () {
+        var socket = io();
+        var nickname = null;
 
-      var pushMessage = function (username, msg) {
-        $('#messages').append($('<li>').text(username + ': ' + msg));
-      }
+        var pushMessage = function (msg) {
+          $('#messages').append($('<li>').text(msg));
+        }
 
-      $('form').submit(function () {
-        var msg = $('#m').val();
+        var pushChatMessage = function (username, msg) {
+          pushMessage(username + ': ' + msg);
+        }
 
-        if (!msg) return;
+        $('form').submit(function () {
+          var msg = $('#m').val();
 
-        socket.emit('chat.message', msg);
-        pushMessage(nickname, msg);
-        $('#m').val('');
-        return false;
-      });
+          if (!msg) return;
 
-      $('#nicknameForm button').click(function () {
-        nickname = $('#nickname').val();
-        socket.emit('user.nameSubmitted', nickname);
-        $('#nicknameForm').hide();
-        $('form').removeAttr('disabled');
-      })
+          socket.emit('chat.message', msg);
+          pushChatMessage(nickname, msg);
+          $('#m').val('');
+          return false;
+        });
 
-      socket.on('chat.message', function (username, msg) {
-        pushMessage(username, msg);
-      });
+        $('#nicknameForm button').click(function () {
+          nickname = $('#nickname').val();
+          socket.emit('user.nameSubmitted', nickname);
+          $('#nicknameForm').hide();
+          $('form').removeAttr('disabled');
+        })
 
-      socket.on('user.connected', function (username) {
-        $('#messages').append($('<li>').text("User '" + username + "' joined the session."));
-      });
+        socket.on('chat.message', function (username, msg) {
+          pushChatMessage(username, msg);
+        });
 
-      socket.on('user.disconnected', function (username) {
-        $('#messages').append($('<li>').text("User '" + username + "' has left."));
-      });
+        socket.on('user.connected', function (username) {
+          pushMessage("User '" + username + "' joined the session.");
+        });
 
+        socket.on('user.disconnected', function (username) {
+          pushMessage("User '" + username + "' has left.");
+        });
+      })();
     </script>
   </body>
 </html>
