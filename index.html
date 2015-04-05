@@ -38,13 +38,25 @@
           pushMessage(username + ': ' + msg);
         }
 
+        var isTyping = false;
+        $('#m').on('input', function () {
+          if ($('#m').val() && !isTyping) {
+            isTyping = true;
+            socket.emit('user.startedTyping', nickname);
+          } else if (!$('#m').val()) {
+            isTyping = false;
+            socket.emit('user.stoppedTyping', nickname);
+          }
+        });
+
         $('form').submit(function () {
           var msg = $('#m').val();
 
           if (!msg) return;
 
+          isTyping = false;
           socket.emit('chat.message', msg);
-          pushChatMessage(nickname, msg);
+          pushChatMessage("YOU", msg);
           $('#m').val('');
           return false;
         });
