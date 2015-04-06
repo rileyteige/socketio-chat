@@ -11,6 +11,7 @@
       #messages { list-style-type: none; margin: 0; padding: 0; }
       #messages li { padding: 5px 10px; }
       #messages li:nth-child(odd) { background: #eee; }
+      #currentStatus { width: 100%; padding: 10px; }
     </style>
   </head>
   <body>
@@ -19,6 +20,8 @@
     </div>
 
     <ul id="messages"></ul>
+
+    <div id="currentStatus"></div>
 
     <form action="" disabled>
       <input id="m" autocomplete="off" /><button>Send</button>
@@ -29,6 +32,24 @@
       (function () {
         var socket = io();
         var nickname = null;
+
+        // Removes items from an array by value.
+        // Courtesy of user 'kennebec' at
+        // http://stackoverflow.com/questions/3954438/remove-item-from-array-by-value
+        function removeA(arr) {
+            var what, a = arguments, L = a.length, ax;
+            while (L > 1 && arr.length) {
+                what = a[--L];
+                while ((ax= arr.indexOf(what)) !== -1) {
+                    arr.splice(ax, 1);
+                }
+            }
+            return arr;
+        }
+
+        var updateStatus = function (status) {
+          $('#currentStatus').text(status);
+        }
 
         var pushMessage = function (msg) {
           $('#messages').append($('<li>').text(msg));
@@ -42,10 +63,10 @@
         $('#m').on('input', function () {
           if ($('#m').val() && !isTyping) {
             isTyping = true;
-            socket.emit('user.startedTyping', nickname);
+            socket.emit('user.startedTyping');
           } else if (!$('#m').val()) {
             isTyping = false;
-            socket.emit('user.stoppedTyping', nickname);
+            socket.emit('user.stoppedTyping');
           }
         });
 
@@ -70,6 +91,7 @@
 
         socket.on('chat.message', function (username, msg) {
           pushChatMessage(username, msg);
+          userStoppedTyping(username);
         });
 
         socket.on('user.connected', function (username) {
@@ -79,6 +101,31 @@
         socket.on('user.disconnected', function (username) {
           pushMessage("User '" + username + "' has left.");
         });
+
+        var typingUsers = [];
+        var updateTypingUsers = function () {
+          if (typingUsers.length == 0) {
+            updateStatus('');
+          } else if (typingUsers.length == 1) {
+            var username = typingUsers[0];
+            updateStatus(username + ' is typing...');
+          } else {
+            updateStatus('Multiple users are typing...');
+          }
+        }
+
+        socket.on('user.startedTyping', function (username) {
+          typingUsers.push(username);
+
+          updateTypingUsers();
+        })
+
+        var userStoppedTyping = function (username) {
+          removeA(typingUsers, username);
+          updateTypingUsers();
+        }
+
+        socket.on('user.stoppedTyping', userStoppedTyping);
       })();
     </script>
   </body>

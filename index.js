@@ -20,13 +20,25 @@ io.on('connection', function (socket) {
 
 	socket.on('disconnect', function () {
 		console.log('user disconnected');
-		io.emit('user.disconnected', username);
+		if (username) {
+			io.emit('user.disconnected', username);
+		}
 	})
 
 	socket.on('user.nameSubmitted', function (name) {
 		username = name;
 		console.log("Username submitted: " + name);
 		socket.broadcast.emit('user.connected', name);
+	})
+
+	socket.on('user.startedTyping', function () {
+		console.log('User typing: ' + username);
+		socket.broadcast.emit('user.startedTyping', username);
+	});
+
+	socket.on('user.stoppedTyping', function () {
+		console.log('User stopped typing: ' + username);
+		socket.broadcast.emit('user.stoppedTyping', username);
 	})
 })
 
