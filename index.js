@@ -39,7 +39,7 @@ io.on('connection', function (socket) {
 	socket.on('user.stoppedTyping', function () {
 		console.log('User stopped typing: ' + username);
 		socket.broadcast.emit('user.stoppedTyping', username);
-	})
+	});
 })
 
 http.listen(3000, function () {
