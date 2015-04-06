@@ -4,30 +4,46 @@
     <title>Socket.IO chat</title>
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body {height:100%;}
       body { font: 13px Helvetica, Arial; }
       form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
       form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
       form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
+      #usersContainer { height: 100%; width: 20%; float: left; border-right: 1px solid black; }
+      #users { padding: 8px; }
+      #users li { padding-bottom: 8px; }
+      #mainBody { height: 100%; width: 80%; float: right; }
       #messages { list-style-type: none; margin: 0; padding: 0; }
       #messages li { padding: 5px 10px; }
       #messages li:nth-child(odd) { background: #eee; }
-      #currentStatus { width: 100%; padding: 10px; }
+      #currentStatus { position: fixed; bottom: 40px; width: 100%; padding: 10px; }
     </style>
   </head>
   <body>
-    <div id="nicknameForm">
-      <input id="nickname" autocomplete="off" /><button>Submit Nickname</button>
+
+    <nav id="usersContainer">
+      <ul id="users" data-bind="foreach: connectedUsers">
+        <li data-bind="text: $data"></li>
+      </ul>
+    </nav>
+
+    <div id="mainBody">
+      <div id="nicknameForm">
+        <input id="nickname" autocomplete="off" /><button>Submit Nickname</button>
+      </div>
+
+      <ul id="messages"></ul>
+
+      <div id="currentStatus" data-bind="text: currentStatus"></div>
+
+      <form action="" disabled>
+        <input id="m" autocomplete="off" /><button>Send</button>
+      </form>
     </div>
 
-    <ul id="messages"></ul>
-
-    <div id="currentStatus"></div>
-
-    <form action="" disabled>
-      <input id="m" autocomplete="off" /><button>Send</button>
-    </form>
     <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
     <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
+    <script src="http://ajax.aspnetcdn.com/ajax/knockout/knockout-3.1.0.js"></script>
     <script>
       (function () {
         var socket = io();
@@ -47,8 +63,31 @@
             return arr;
         }
 
+        function AppViewModel() {
+          var self = this;
+
+          this.connectedUsers = ko.observableArray();
+          this.typingUsers = ko.observableArray();
+
+          this.currentStatus = ko.computed(function () {
+            var status = '';
+
+            if (self.typingUsers().length == 1) {
+              var username = self.typingUsers()[0];
+              status = username + ' is typing...';
+            } else if (self.typingUsers().length > 1) {
+              status = 'Multiple users are typing...';
+            }
+
+            return status;
+          })
+        }
+
+        var app = new AppViewModel()
+        ko.applyBindings(app);
+
         var updateStatus = function (status) {
-          $('#currentStatus').text(status);
+          app.currentStatus(status);
         }
 
         var pushMessage = function (msg) {
@@ -95,34 +134,22 @@
         });
 
         socket.on('user.connected', function (username) {
+          app.connectedUsers.push(username);
           pushMessage("User '" + username + "' joined the session.");
         });
 
         socket.on('user.disconnected', function (username) {
+          app.connectedUsers.remove(username);
+          userStoppedTyping(username);
           pushMessage("User '" + username + "' has left.");
         });
 
-        var typingUsers = [];
-        var updateTypingUsers = function () {
-          if (typingUsers.length == 0) {
-            updateStatus('');
-          } else if (typingUsers.length == 1) {
-            var username = typingUsers[0];
-            updateStatus(username + ' is typing...');
-          } else {
-            updateStatus('Multiple users are typing...');
-          }
-        }
-
         socket.on('user.startedTyping', function (username) {
-          typingUsers.push(username);
-
-          updateTypingUsers();
+          app.typingUsers.push(username);
         })
 
         var userStoppedTyping = function (username) {
-          removeA(typingUsers, username);
-          updateTypingUsers();
+          app.typingUsers.remove(username);
         }
 
         socket.on('user.stoppedTyping', userStoppedTyping);
